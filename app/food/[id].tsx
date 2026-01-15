@@ -10,8 +10,11 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../src/services/FireBase";
+import { useDispatch } from "react-redux";
+import { addItem } from "../../src/store/cartSlice";
 
 interface FoodItem {
+  id: string;
   name: string;
   description: string;
   price: number;
@@ -27,6 +30,7 @@ const EXTRAS = [
 
 export default function FoodDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const dispatch = useDispatch(); // ✅ inside component
   const [food, setFood] = useState<FoodItem | null>(null);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
@@ -39,8 +43,7 @@ export default function FoodDetails() {
       const snap = await getDoc(ref);
 
       if (snap.exists()) {
-        const data = snap.data() as FoodItem;
-        setFood(data); // ✅ use data only, id comes from router if needed
+        setFood({ id: snap.id, ...(snap.data() as Omit<FoodItem, "id">) });
       }
     };
 
@@ -53,6 +56,26 @@ export default function FoodDetails() {
         ? prev.filter((e) => e !== extraId)
         : [...prev, extraId]
     );
+  };
+
+  const handleAddToCart = () => {
+    if (!food) return;
+
+    dispatch(
+      addItem({
+        id: food.id,
+        name: food.name,
+        price: food.price,
+        image: food.image,
+        quantity,
+        extras: selectedExtras.map((extraId) => {
+          const extra = EXTRAS.find((e) => e.id === extraId)!;
+          return { id: extra.id, name: extra.name, price: extra.price };
+        }),
+      })
+    );
+
+    alert("Added to cart!");
   };
 
   const extrasTotal = selectedExtras.reduce((sum, extraId) => {
@@ -79,7 +102,6 @@ export default function FoodDetails() {
         <Text style={styles.desc}>{food.description}</Text>
 
         <Text style={styles.section}>Extras</Text>
-
         {EXTRAS.map((extra) => (
           <TouchableOpacity
             key={extra.id}
@@ -101,7 +123,6 @@ export default function FoodDetails() {
         ))}
 
         <Text style={styles.section}>Quantity</Text>
-
         <View style={styles.qtyRow}>
           <TouchableOpacity
             style={styles.qtyBtn}
@@ -122,7 +143,7 @@ export default function FoodDetails() {
 
         <Text style={styles.total}>Total: R {totalPrice.toFixed(2)}</Text>
 
-        <TouchableOpacity style={styles.addBtn}>
+        <TouchableOpacity style={styles.addBtn} onPress={handleAddToCart}>
           <Text style={styles.addText}>Add to Cart</Text>
         </TouchableOpacity>
       </View>
