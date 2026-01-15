@@ -1,17 +1,19 @@
-import { useEffect, useState } from "react";
+// app/food/[id].tsx
+import React, { useEffect, useState } from "react";
 import {
+  ScrollView,
   View,
   Text,
   StyleSheet,
   Image,
   TouchableOpacity,
-  ScrollView,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../src/services/FireBase";
 import { useDispatch } from "react-redux";
 import { addItem } from "../../src/store/cartSlice";
+import CartIcon from "../components/CartIcon";
 
 interface FoodItem {
   id: string;
@@ -30,7 +32,8 @@ const EXTRAS = [
 
 export default function FoodDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const dispatch = useDispatch(); // ✅ inside component
+  const router = useRouter();
+  const dispatch = useDispatch();
   const [food, setFood] = useState<FoodItem | null>(null);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
@@ -58,6 +61,13 @@ export default function FoodDetails() {
     );
   };
 
+  const extrasTotal = selectedExtras.reduce((sum, extraId) => {
+    const extra = EXTRAS.find((e) => e.id === extraId);
+    return sum + (extra?.price || 0);
+  }, 0);
+
+  const totalPrice = ((food?.price || 0) + extrasTotal) * quantity;
+
   const handleAddToCart = () => {
     if (!food) return;
 
@@ -78,13 +88,6 @@ export default function FoodDetails() {
     alert("Added to cart!");
   };
 
-  const extrasTotal = selectedExtras.reduce((sum, extraId) => {
-    const extra = EXTRAS.find((e) => e.id === extraId);
-    return sum + (extra?.price || 0);
-  }, 0);
-
-  const totalPrice = ((food?.price || 0) + extrasTotal) * quantity;
-
   if (!food) {
     return (
       <View style={styles.center}>
@@ -95,6 +98,11 @@ export default function FoodDetails() {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Cart Icon in top-right */}
+      <View style={styles.header}>
+        <CartIcon />
+      </View>
+
       <Image source={{ uri: food.image }} style={styles.image} />
 
       <View style={styles.content}>
@@ -146,6 +154,13 @@ export default function FoodDetails() {
         <TouchableOpacity style={styles.addBtn} onPress={handleAddToCart}>
           <Text style={styles.addText}>Add to Cart</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.addBtn, { backgroundColor: "#ff6b00", marginTop: 10 }]}
+          onPress={() => router.push("/cart")}
+        >
+          <Text style={styles.addText}>Go to Cart</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -154,8 +169,9 @@ export default function FoodDetails() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  header: { position: "absolute", top: 40, right: 16, zIndex: 10 },
   image: { width: "100%", height: 260 },
-  content: { padding: 16 },
+  content: { padding: 16, paddingTop: 20 },
   name: { fontSize: 26, fontWeight: "bold" },
   desc: { color: "#666", marginVertical: 8 },
   section: { fontSize: 18, fontWeight: "bold", marginTop: 20, marginBottom: 8 },
