@@ -21,13 +21,11 @@ export default function Cart() {
   const cart = useSelector((state: RootState) => state.cart.items);
   const dispatch = useDispatch<AppDispatch>();
 
-  const total = cart.reduce(
-    (sum, item) =>
-      sum +
-      item.quantity *
-        (item.price + (item.extras?.reduce((a, e) => a + e.price, 0) || 0)),
-    0
-  );
+  const total = cart.reduce((sum, item) => {
+    const drinksTotal = item.drinks?.reduce((a, d) => a + d.price, 0) || 0;
+    const extrasTotal = item.extras?.reduce((a, e) => a + e.price, 0) || 0;
+    return sum + item.quantity * (item.price + drinksTotal + extrasTotal);
+  }, 0);
 
   if (cart.length === 0)
     return (
@@ -39,7 +37,6 @@ export default function Cart() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 🔹 HEADING */}
       <Text style={styles.heading}>🛒 My Cart</Text>
 
       <FlatList
@@ -51,11 +48,26 @@ export default function Cart() {
             <Image source={{ uri: item.image }} style={styles.image} />
             <View style={styles.info}>
               <Text style={styles.name}>{item.name}</Text>
-              {item.extras?.map((e) => (
-                <Text key={e.id} style={styles.extra}>
-                  + {e.name} (R{e.price})
+
+              {/* Sides */}
+              {item.sides && item.sides.length > 0 && (
+                <Text style={styles.extra}>Sides: {item.sides.join(", ")}</Text>
+              )}
+
+              {/* Drinks */}
+              {item.drinks?.map((d) => (
+                <Text key={d.id} style={styles.extra}>
+                  Drink: {d.name} (+R{d.price})
                 </Text>
               ))}
+
+              {/* Extras */}
+              {item.extras?.map((e) => (
+                <Text key={e.id} style={styles.extra}>
+                  Extra: {e.name} (+R{e.price})
+                </Text>
+              ))}
+
               <View style={styles.qtyRow}>
                 <TouchableOpacity
                   style={styles.qtyBtn}
@@ -81,6 +93,7 @@ export default function Cart() {
           </View>
         )}
       />
+
       <View style={styles.totalRow}>
         <Text style={styles.totalText}>Total: R {total.toFixed(2)}</Text>
         <TouchableOpacity
@@ -99,7 +112,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     paddingHorizontal: 16,
-    paddingTop: 30, // space for status bar
+    paddingTop: 30,
   },
   center: {
     flex: 1,
@@ -125,12 +138,8 @@ const styles = StyleSheet.create({
   image: { width: 100, height: 100, borderRadius: 12 },
   info: { flex: 1, padding: 12 },
   name: { fontSize: 18, fontWeight: "bold", marginBottom: 4 },
-  extra: { color: "#666", fontSize: 14 },
-  qtyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 12,
-  },
+  extra: { color: "#666", fontSize: 14, marginTop: 2 },
+  qtyRow: { flexDirection: "row", alignItems: "center", marginTop: 12 },
   qtyBtn: {
     backgroundColor: "#ff6b00",
     paddingHorizontal: 12,

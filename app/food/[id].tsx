@@ -1,4 +1,3 @@
-// app/food/[id].tsx
 import React, { useEffect, useState } from "react";
 import {
   ScrollView,
@@ -24,9 +23,20 @@ interface FoodItem {
   category: string;
 }
 
+// Mock sides and drinks
+const SIDES = [
+  { id: "chips", name: "Chips" },
+  { id: "salad", name: "Salad" },
+  { id: "pap", name: "Pap" },
+];
+
+const DRINKS = [
+  { id: "coke", name: "Coke", price: 15 },
+  { id: "juice", name: "Juice", price: 10 },
+];
+
 const EXTRAS = [
-  { id: "chips", name: "Extra Chips", price: 10 },
-  { id: "cheese", name: "Extra Cheese", price: 8 },
+  { id: "cheese", name: "Extra Cheese", price: 10 },
   { id: "sauce", name: "Extra Sauce", price: 5 },
 ];
 
@@ -34,43 +44,53 @@ export default function FoodDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const dispatch = useDispatch();
+
   const [food, setFood] = useState<FoodItem | null>(null);
+  const [selectedSides, setSelectedSides] = useState<string[]>([]);
+  const [selectedDrinks, setSelectedDrinks] = useState<string[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     if (!id) return;
-
     const fetchFood = async () => {
       const ref = doc(db, "menu", id);
       const snap = await getDoc(ref);
-
       if (snap.exists()) {
         setFood({ id: snap.id, ...(snap.data() as Omit<FoodItem, "id">) });
       }
     };
-
     fetchFood();
   }, [id]);
 
-  const toggleExtra = (extraId: string) => {
-    setSelectedExtras((prev) =>
-      prev.includes(extraId)
-        ? prev.filter((e) => e !== extraId)
-        : [...prev, extraId]
-    );
+  const toggleSelection = (
+    id: string,
+    selected: string[],
+    setSelected: (v: string[]) => void,
+    max: number
+  ) => {
+    if (selected.includes(id)) {
+      setSelected(selected.filter((s) => s !== id));
+    } else {
+      if (selected.length < max) setSelected([...selected, id]);
+      else alert(`You can only select up to ${max}`);
+    }
   };
 
-  const extrasTotal = selectedExtras.reduce((sum, extraId) => {
-    const extra = EXTRAS.find((e) => e.id === extraId);
-    return sum + (extra?.price || 0);
-  }, 0);
-
-  const totalPrice = ((food?.price || 0) + extrasTotal) * quantity;
+  const totalPrice =
+    ((food?.price || 0) +
+      selectedDrinks.reduce(
+        (sum, d) => sum + (DRINKS.find((item) => item.id === d)?.price || 0),
+        0
+      ) +
+      selectedExtras.reduce(
+        (sum, e) => sum + (EXTRAS.find((item) => item.id === e)?.price || 0),
+        0
+      )) *
+    quantity;
 
   const handleAddToCart = () => {
     if (!food) return;
-
     dispatch(
       addItem({
         id: food.id,
@@ -78,13 +98,17 @@ export default function FoodDetails() {
         price: food.price,
         image: food.image,
         quantity,
-        extras: selectedExtras.map((extraId) => {
-          const extra = EXTRAS.find((e) => e.id === extraId)!;
+        sides: selectedSides,
+        drinks: selectedDrinks.map((d) => {
+          const drink = DRINKS.find((item) => item.id === d)!;
+          return { id: drink.id, name: drink.name, price: drink.price };
+        }),
+        extras: selectedExtras.map((e) => {
+          const extra = EXTRAS.find((item) => item.id === e)!;
           return { id: extra.id, name: extra.name, price: extra.price };
         }),
       })
     );
-
     alert("Added to cart!");
   };
 
@@ -98,7 +122,6 @@ export default function FoodDetails() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Cart Icon in top-right */}
       <View style={styles.header}>
         <CartIcon />
       </View>
@@ -108,28 +131,87 @@ export default function FoodDetails() {
       <View style={styles.content}>
         <Text style={styles.name}>{food.name}</Text>
         <Text style={styles.desc}>{food.description}</Text>
+        <Text style={styles.price}>R {food.price.toFixed(2)}</Text>
 
-        <Text style={styles.section}>Extras</Text>
-        {EXTRAS.map((extra) => (
-          <TouchableOpacity
-            key={extra.id}
-            style={[
-              styles.extraRow,
-              selectedExtras.includes(extra.id) && styles.extraSelected,
-            ]}
-            onPress={() => toggleExtra(extra.id)}
-          >
-            <Text
+        {/* SIDES */}
+        <Text style={styles.section}>Sides (Select 1 or 2)</Text>
+        <View style={styles.optionsRow}>
+          {SIDES.map((side) => (
+            <TouchableOpacity
+              key={side.id}
               style={[
-                styles.extraText,
-                selectedExtras.includes(extra.id) && { color: "#fff" },
+                styles.optionBtn,
+                selectedSides.includes(side.id) && styles.optionSelected,
               ]}
+              onPress={() =>
+                toggleSelection(side.id, selectedSides, setSelectedSides, 2)
+              }
             >
-              {extra.name} (+R{extra.price})
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.optionText,
+                  selectedSides.includes(side.id) && { color: "#fff" },
+                ]}
+              >
+                {side.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
+        {/* DRINKS */}
+        <Text style={styles.section}>Drinks</Text>
+        <View style={styles.optionsRow}>
+          {DRINKS.map((drink) => (
+            <TouchableOpacity
+              key={drink.id}
+              style={[
+                styles.optionBtn,
+                selectedDrinks.includes(drink.id) && styles.optionSelected,
+              ]}
+              onPress={() =>
+                toggleSelection(drink.id, selectedDrinks, setSelectedDrinks, 1)
+              }
+            >
+              <Text
+                style={[
+                  styles.optionText,
+                  selectedDrinks.includes(drink.id) && { color: "#fff" },
+                ]}
+              >
+                {drink.name} (+R{drink.price})
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* EXTRAS */}
+        <Text style={styles.section}>Extras</Text>
+        <View style={styles.optionsRow}>
+          {EXTRAS.map((extra) => (
+            <TouchableOpacity
+              key={extra.id}
+              style={[
+                styles.optionBtn,
+                selectedExtras.includes(extra.id) && styles.optionSelected,
+              ]}
+              onPress={() =>
+                toggleSelection(extra.id, selectedExtras, setSelectedExtras, 2)
+              }
+            >
+              <Text
+                style={[
+                  styles.optionText,
+                  selectedExtras.includes(extra.id) && { color: "#fff" },
+                ]}
+              >
+                {extra.name} (+R{extra.price})
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* QUANTITY */}
         <Text style={styles.section}>Quantity</Text>
         <View style={styles.qtyRow}>
           <TouchableOpacity
@@ -138,9 +220,7 @@ export default function FoodDetails() {
           >
             <Text style={styles.qtyText}>−</Text>
           </TouchableOpacity>
-
           <Text style={styles.qtyValue}>{quantity}</Text>
-
           <TouchableOpacity
             style={styles.qtyBtn}
             onPress={() => setQuantity(quantity + 1)}
@@ -173,16 +253,24 @@ const styles = StyleSheet.create({
   image: { width: "100%", height: 260 },
   content: { padding: 16, paddingTop: 20 },
   name: { fontSize: 26, fontWeight: "bold" },
-  desc: { color: "#666", marginVertical: 8 },
+  desc: { color: "#666", marginVertical: 4 },
+  price: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginVertical: 8,
+    color: "#ff6b00",
+  },
   section: { fontSize: 18, fontWeight: "bold", marginTop: 20, marginBottom: 8 },
-  extraRow: {
-    padding: 12,
-    borderRadius: 10,
+  optionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  optionBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
     backgroundColor: "#eee",
     marginBottom: 8,
   },
-  extraSelected: { backgroundColor: "#ff6b00" },
-  extraText: { color: "#000", fontWeight: "bold" },
+  optionSelected: { backgroundColor: "#ff6b00" },
+  optionText: { color: "#000", fontWeight: "bold" },
   qtyRow: { flexDirection: "row", alignItems: "center", marginTop: 10 },
   qtyBtn: { backgroundColor: "#ff6b00", padding: 12, borderRadius: 8 },
   qtyText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
