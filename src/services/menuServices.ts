@@ -12,8 +12,13 @@ export interface MenuItem {
 
 export const getMenuItems = async (): Promise<MenuItem[]> => {
   const snapshot = await getDocs(collection(db, "menu"));
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...(doc.data() as Omit<MenuItem, "id">),
-  }));
+
+  return snapshot.docs.map((doc) => {
+    const data = doc.data() as Omit<MenuItem, "id">;
+
+    return {
+      id: doc.id,
+      ...data,
+    };
+  });
 };
