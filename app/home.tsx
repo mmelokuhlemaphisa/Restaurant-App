@@ -1,13 +1,13 @@
+import { useEffect, useState } from "react";
 import {
-  View,
-  Text,
   FlatList,
   Image,
-  TouchableOpacity,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useEffect, useState } from "react";
-import { getMenuItems, MenuItem } from "../src/services/menuService";
+import { getMenuItems, MenuItem } from "../src/services/menuServices";
 
 export default function Home() {
   const [menu, setMenu] = useState<MenuItem[]>([]);
