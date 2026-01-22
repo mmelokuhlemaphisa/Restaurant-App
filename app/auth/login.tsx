@@ -4,6 +4,7 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from "react-native";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../src/services/FireBase";
@@ -26,12 +27,21 @@ export default function Login() {
 
   return (
     <View style={styles.container}>
+      {/* Logo */}
+      <Image
+        source={require("../../assets/images/ChatGPT Image Jan 14, 2026, 03_40_07 PM.png")}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+
       <Text style={styles.title}>Welcome Back</Text>
 
       <TextInput
         placeholder="Email"
         style={styles.input}
         onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
       />
       <TextInput
         placeholder="Password"
@@ -52,22 +62,57 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: "center" },
-  title: { fontSize: 28, fontWeight: "bold", marginBottom: 20 },
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 30,
+    color: "#FF6B00",
+    textAlign: "center",
+  },
   input: {
+    width: "100%",
     borderWidth: 1,
     borderColor: "#ccc",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 15,
+    fontSize: 16,
+    backgroundColor: "#fdfdfd",
   },
   button: {
-    backgroundColor: "#ff6b00",
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: "#FF6B00",
+    padding: 16,
+    borderRadius: 12,
+    width: "100%",
     marginTop: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  buttonText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
-  link: { textAlign: "center", marginTop: 15, color: "#ff6b00" },
+  buttonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  link: {
+    textAlign: "center",
+    marginTop: 20,
+    color: "#FF6B00",
+    fontWeight: "bold",
+  },
 });
- 

@@ -8,6 +8,9 @@ export interface MenuItem {
   price: number;
   description: string;
   image: string;
+  popular?: boolean; // Optional: true if item is popular
+  new?: boolean; // Optional: true if item is new
+  // You can add more fields here in the future
 }
 
 export const getMenuItems = async (): Promise<MenuItem[]> => {
@@ -18,7 +21,13 @@ export const getMenuItems = async (): Promise<MenuItem[]> => {
 
     return {
       id: doc.id,
-      ...data,
+      name: data.name,
+      category: data.category,
+      price: data.price,
+      description: data.description,
+      image: data.image,
+      popular: data.popular || false, // default false if not set
+      new: data.new || false, // default false if not set
     };
   });
 };

@@ -13,6 +13,8 @@ import { db } from "../../src/services/FireBase";
 import { useDispatch } from "react-redux";
 import { addItem } from "../../src/store/cartSlice";
 import CartIcon from "../components/CartIcon";
+import { Ionicons } from "@expo/vector-icons";
+
 
 interface FoodItem {
   id: string;
@@ -123,11 +125,16 @@ export default function FoodDetails() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
+        {/* Back arrow at the start */}
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={28} color="#ff6b00" />
+        </TouchableOpacity>
+
+        {/* Spacer to push CartIcon to the end */}
         <CartIcon />
       </View>
 
       <Image source={{ uri: food.image }} style={styles.image} />
-
       <View style={styles.content}>
         <Text style={styles.name}>{food.name}</Text>
         <Text style={styles.desc}>{food.description}</Text>
@@ -234,22 +241,41 @@ export default function FoodDetails() {
         <TouchableOpacity style={styles.addBtn} onPress={handleAddToCart}>
           <Text style={styles.addText}>Add to Cart</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: "#ff6b00", marginTop: 10 }]}
-          onPress={() => router.push("/cart")}
-        >
-          <Text style={styles.addText}>Go to Cart</Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 40,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#ff6b00",
+  },
+  backBtn: {
+    marginRight: 16,
+  },
+
   container: { flex: 1, backgroundColor: "#fff" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { position: "absolute", top: 40, right: 16, zIndex: 10 },
+  header: {
+    position: "absolute",
+    top: 40,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+  },
   image: { width: "100%", height: 260 },
   content: { padding: 16, paddingTop: 20 },
   name: { fontSize: 26, fontWeight: "bold" },

@@ -6,9 +6,9 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
-  sides?: string[]; // selected sides
-  drinks?: { id: string; name: string; price: number }[];
-  extras?: { id: string; name: string; price: number }[];
+ sides?: string[];
+ drinks?: { id: string; name: string; price: number }[];
+ extras?: { id: string; name: string; price: number }[];
 }
 
 interface CartState {
@@ -27,18 +27,6 @@ const cartSlice = createSlice({
       const existing = state.items.find((i) => i.id === action.payload.id);
       if (existing) {
         existing.quantity += action.payload.quantity;
-        // merge sides, drinks, extras
-        existing.sides = Array.from(
-          new Set([...(existing.sides || []), ...(action.payload.sides || [])])
-        );
-        existing.drinks = [
-          ...(existing.drinks || []),
-          ...(action.payload.drinks || []),
-        ];
-        existing.extras = [
-          ...(existing.extras || []),
-          ...(action.payload.extras || []),
-        ];
       } else {
         state.items.push(action.payload);
       }
