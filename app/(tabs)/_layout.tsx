@@ -1,7 +1,6 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Text, Image, StyleSheet } from "react-native";
-import CartIcon from "../components/CartIcon";
 
 export default function TabsLayout() {
   return (
@@ -18,7 +17,7 @@ export default function TabsLayout() {
           headerTitle: () => (
             <View style={styles.headerContainer}>
               <Image
-                source={require("../../assets/images/ChatGPT Image Jan 14, 2026, 03_40_07 PM.png")} // <-- your logo path
+                source={require("../../assets/images/logo.png")} // <-- your logo path
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -37,7 +36,7 @@ export default function TabsLayout() {
           headerTitle: () => (
             <View style={styles.headerContainer}>
               <Image
-                source={require("../../assets/images/ChatGPT Image Jan 14, 2026, 03_40_07 PM.png")} // <-- your logo path
+                source={require("../../assets/images/logo.png")} // <-- your logo path
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -56,7 +55,7 @@ export default function TabsLayout() {
           headerTitle: () => (
             <View style={styles.headerContainer}>
               <Image
-                source={require("../../assets/images/ChatGPT Image Jan 14, 2026, 03_40_07 PM.png")} // <-- your logo path
+                source={require("../../assets/images/logo.png")} // <-- your logo path
                 style={styles.logo}
                 resizeMode="contain"
               />
