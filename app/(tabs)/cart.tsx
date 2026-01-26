@@ -35,35 +35,36 @@ export default function Cart() {
   const [loading, setLoading] = useState(true);
   const [firstLoad, setFirstLoad] = useState(true);
 
-  // 🔥 Get user reliably
+  // AUTH LISTENER
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
     });
-
     return unsubscribe;
   }, []);
 
-  // 1️⃣ Load cart from Firestore
+  // LOAD CART FROM FIRESTORE ONLY IF USER LOGGED IN
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setFirstLoad(false);
+      return;
+    }
 
     (async () => {
       const firestoreCart = await getCartFromFirestore(user.uid);
-      dispatch(setCart(firestoreCart));
+      dispatch(setCart(firestoreCart ?? []));
       setFirstLoad(false);
     })();
   }, [user]);
 
-  // 2️⃣ Save cart to Firestore
+  // SAVE CART TO FIRESTORE (ONLY IF USER LOGGED IN)
   useEffect(() => {
-    if (!user) return;
-    if (firstLoad) return; // prevents overwriting during first load
-
+    if (!user || firstLoad) return;
     saveCartToFirestore(user.uid, cart);
   }, [cart, user, firstLoad]);
 
+  // TOTAL CALCULATION
   const total = cart.reduce((sum, item) => {
     const drinksTotal = item.drinks?.reduce((a, d) => a + d.price, 0) || 0;
     const extrasTotal = item.extras?.reduce((a, e) => a + e.price, 0) || 0;
@@ -78,13 +79,15 @@ export default function Cart() {
     );
   }
 
-  if (cart.length === 0)
+  // EMPTY CART
+  if (cart.length === 0) {
     return (
       <SafeAreaView style={styles.center}>
         <Text style={styles.heading}>🛒 My Cart</Text>
-        <Text style={{ marginTop: 20 }}>Your cart is empty!</Text>
+        <Text>Your cart is empty!</Text>
       </SafeAreaView>
     );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -98,10 +101,6 @@ export default function Cart() {
             <View style={styles.info}>
               <Text style={styles.name}>{item.name}</Text>
 
-              {item.sides && item.sides.length > 0 && (
-                <Text style={styles.extra}>Sides: {item.sides.join(", ")}</Text>
-              )}
-
               {item.drinks?.map((d) => (
                 <Text key={d.id} style={styles.extra}>
                   Drink: {d.name} (+R{d.price})
@@ -114,6 +113,19 @@ export default function Cart() {
                 </Text>
               ))}
 
+              {/* EDIT EXTRAS BUTTON */}
+              <TouchableOpacity
+                style={styles.editExtrasBtn}
+                onPress={() =>
+                  router.push({
+                    pathname: "/editExtras/[id]",
+                    params: { id: item.id },
+                  })
+                }
+              >
+                <Text style={styles.editExtrasText}>Edit Extras</Text>
+              </TouchableOpacity>
+
               <View style={styles.qtyRow}>
                 <TouchableOpacity
                   style={styles.qtyBtn}
@@ -121,13 +133,16 @@ export default function Cart() {
                 >
                   <Text style={styles.qtyText}>−</Text>
                 </TouchableOpacity>
+
                 <Text style={styles.qtyValue}>{item.quantity}</Text>
+
                 <TouchableOpacity
                   style={styles.qtyBtn}
                   onPress={() => dispatch(incrementQty(item.id))}
                 >
                   <Text style={styles.qtyText}>+</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
                   style={styles.removeBtn}
                   onPress={() => dispatch(removeItem(item.id))}
@@ -143,20 +158,27 @@ export default function Cart() {
       <View style={styles.totalRow}>
         <Text style={styles.totalText}>Total: R {total.toFixed(2)}</Text>
 
+        {/* ONE BUTTON ONLY */}
         <TouchableOpacity
           style={styles.checkoutBtn}
-          onPress={() => router.push("/checkout")}
+          onPress={() => {
+            if (!user) {
+              router.push("/auth/login");
+              return;
+            }
+            router.push("/checkout");
+          }}
         >
-          <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+          <Text style={styles.checkoutText}>
+            {user ? "Proceed to Checkout" : "Login / Register to Checkout"}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.clearBtn}
           onPress={async () => {
             dispatch(clearCart());
-            if (user) {
-              await deleteCartFromFirestore(user.uid);
-            }
+            if (user) await deleteCartFromFirestore(user.uid);
           }}
         >
           <Text style={styles.clearText}>Clear Cart</Text>
@@ -212,6 +234,20 @@ const styles = StyleSheet.create({
   info: { flex: 1, padding: 12 },
   name: { fontSize: 18, fontWeight: "bold", marginBottom: 4 },
   extra: { color: "#666", fontSize: 14, marginTop: 2 },
+
+  editExtrasBtn: {
+    marginTop: 8,
+    backgroundColor: "#ff6b00",
+    padding: 8,
+    borderRadius: 8,
+    alignItems: "center",
+    width: "40%",
+  },
+  editExtrasText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+
   qtyRow: { flexDirection: "row", alignItems: "center", marginTop: 12 },
   qtyBtn: {
     backgroundColor: "#ff6b00",
@@ -223,6 +259,7 @@ const styles = StyleSheet.create({
   qtyValue: { fontSize: 16, fontWeight: "bold", marginHorizontal: 10 },
   removeBtn: { marginLeft: 12 },
   removeText: { color: "red", fontWeight: "bold" },
+
   totalRow: {
     paddingVertical: 16,
     borderTopWidth: 1,
@@ -230,11 +267,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   totalText: { fontSize: 20, fontWeight: "bold" },
+
   clearBtn: {
-    marginTop: 8,
+    marginTop: 10,
     backgroundColor: "#ff6b00",
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
+    width: "100%",
+    alignItems: "center",
   },
   clearText: { color: "#fff", fontWeight: "bold" },
 });

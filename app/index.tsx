@@ -17,16 +17,18 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        router.replace("../../(tabs)");
+        // ✅ Logged in → go straight to app
+        router.replace("/(tabs)");
       } else {
+        // ✅ Not logged in → show welcome screen
         setLoading(false);
       }
     });
 
-    return unsub;
-  }, []);
+    return unsubscribe;
+  }, [router]);
 
   if (loading) {
     return (
@@ -50,9 +52,10 @@ export default function Index() {
         Browse the menu, choose your favourite food, and order in seconds.
       </Text>
 
+      {/* ✅ PUBLIC ACCESS */}
       <TouchableOpacity
         style={styles.browseBtn}
-        onPress={() => router.push("/")}
+        onPress={() => router.push("/(tabs)")}
       >
         <Text style={styles.btnText}>Browse Menu</Text>
       </TouchableOpacity>
@@ -71,26 +74,6 @@ export default function Index() {
         >
           <Text style={[styles.authText, { color: "#fff" }]}>Register</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Bottom Section - No empty space */}
-      <View style={styles.bottom}>
-        <Text style={styles.bottomTitle}>Why choose CraveCart?</Text>
-
-        <View style={styles.benefitRow}>
-          <Text style={styles.benefitDot}>•</Text>
-          <Text style={styles.benefitText}>Fast delivery & easy ordering</Text>
-        </View>
-
-        <View style={styles.benefitRow}>
-          <Text style={styles.benefitDot}>•</Text>
-          <Text style={styles.benefitText}>Best deals & daily specials</Text>
-        </View>
-
-        <View style={styles.benefitRow}>
-          <Text style={styles.benefitDot}>•</Text>
-          <Text style={styles.benefitText}>Browse without signing in</Text>
-        </View>
       </View>
     </ScrollView>
   );
@@ -121,7 +104,6 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 18,
     fontSize: 16,
-    paddingHorizontal: 10,
   },
   browseBtn: {
     backgroundColor: "#ff6b00",
@@ -131,16 +113,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 14,
   },
-  btnText: { color: "#fff", fontWeight: "bold", fontSize: 18 },
+  btnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
   row: {
     flexDirection: "row",
     width: "100%",
     justifyContent: "space-between",
-    marginBottom: 18,
   },
   authBtn: {
     flex: 1,
-    backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#ff6b00",
     padding: 14,
@@ -151,32 +135,5 @@ const styles = StyleSheet.create({
   authText: {
     color: "#ff6b00",
     fontWeight: "bold",
-  },
-  bottom: {
-    width: "100%",
-    paddingVertical: 18,
-    borderTopWidth: 1,
-    borderColor: "#eee",
-    marginTop: 10,
-  },
-  bottomTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  benefitRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 6,
-  },
-  benefitDot: {
-    fontSize: 18,
-    marginRight: 8,
-    color: "#ff6b00",
-  },
-  benefitText: {
-    fontSize: 15,
-    color: "#666",
   },
 });

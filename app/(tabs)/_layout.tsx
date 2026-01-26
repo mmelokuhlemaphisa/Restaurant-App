@@ -1,8 +1,24 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Text, Image, StyleSheet } from "react-native";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../src/services/FireBase";
+import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 
 export default function TabsLayout() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+
+  // 🔐 Listen for auth state (used to protect tabs)
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+
+    return unsub;
+  }, []);
+
   return (
     <Tabs
       screenOptions={{
@@ -11,13 +27,14 @@ export default function TabsLayout() {
         headerTintColor: "#fff",
       }}
     >
+      {/* 🏠 MENU — PUBLIC */}
       <Tabs.Screen
         name="index"
         options={{
           headerTitle: () => (
             <View style={styles.headerContainer}>
               <Image
-                source={require("../../assets/images/logo.png")} // <-- your logo path
+                source={require("../../assets/images/logo.png")}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -30,13 +47,14 @@ export default function TabsLayout() {
         }}
       />
 
+      {/* 🛒 CART — PUBLIC */}
       <Tabs.Screen
         name="cart"
         options={{
           headerTitle: () => (
             <View style={styles.headerContainer}>
               <Image
-                source={require("../../assets/images/logo.png")} // <-- your logo path
+                source={require("../../assets/images/logo.png")}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -49,13 +67,22 @@ export default function TabsLayout() {
         }}
       />
 
+      {/* 📦 ORDERS — LOGIN REQUIRED */}
       <Tabs.Screen
         name="orders"
+        listeners={{
+          tabPress: (e) => {
+            if (!user) {
+              e.preventDefault();
+              router.push("/auth/login");
+            }
+          },
+        }}
         options={{
           headerTitle: () => (
             <View style={styles.headerContainer}>
               <Image
-                source={require("../../assets/images/logo.png")} // <-- your logo path
+                source={require("../../assets/images/logo.png")}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -68,8 +95,17 @@ export default function TabsLayout() {
         }}
       />
 
+      {/* 👤 PROFILE — LOGIN REQUIRED */}
       <Tabs.Screen
         name="profile"
+        listeners={{
+          tabPress: (e) => {
+            if (!user) {
+              e.preventDefault();
+              router.push("/auth/login");
+            }
+          },
+        }}
         options={{
           title: "Profile",
           tabBarIcon: ({ color, size }) => (
@@ -78,14 +114,13 @@ export default function TabsLayout() {
         }}
       />
 
+      {/* 💳 CHECKOUT — HIDDEN & PROTECTED */}
       <Tabs.Screen
         name="checkout"
         options={{
-          title: "Checkout",
-          tabBarButton: () => null, // 👈 hide from tab bar
+          href: null, // ✅ completely removes from navigation
         }}
       />
-      
     </Tabs>
   );
 }

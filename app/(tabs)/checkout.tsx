@@ -29,12 +29,14 @@ export default function CheckoutScreen() {
   const [editingAddress, setEditingAddress] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("Visa **** 4242");
 
+  // 🔥 FIXED: Auth redirect
   useEffect(() => {
     if (!user) {
       router.replace("/auth/login");
     }
-  }, []);
+  }, [user]);
 
+  // 🔥 FIXED: Fetch address correctly
   useEffect(() => {
     const fetchAddress = async () => {
       if (!user) return;
@@ -48,7 +50,7 @@ export default function CheckoutScreen() {
     };
 
     fetchAddress();
-  }, []);
+  }, [user]);
 
   const total = cartItems.reduce((sum, item) => {
     const extrasTotal = item.extras?.reduce((a, e) => a + e.price, 0) || 0;
