@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-  Alert,
-} from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { db } from "../../src/services/FireBase";
 
 interface UserProfile {
@@ -130,7 +130,7 @@ export default function Profile() {
             : new Date(profile.createdAt).toDateString()}
         </Text>
       </View>
-    
+
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: "#ff6b00" }]}
