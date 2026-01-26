@@ -1,15 +1,24 @@
+import { useRouter } from "expo-router";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { useState } from "react";
 import {
-  View,
+  Image,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Image,
+  View,
 } from "react-native";
-import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../src/services/FireBase";
-import { useState } from "react";
-import { useRouter } from "expo-router";
+
+// Firestore imports
+import {
+  collection,
+  getDocs,
+  getFirestore,
+  query,
+  where,
+} from "firebase/firestore";
 
 export default function Login() {
   const router = useRouter();
@@ -18,8 +27,33 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/");
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      // Get user email
+      const userEmail = userCredential.user.email;
+
+      // Firestore database
+      const db = getFirestore();
+
+      // Check if user is admin
+      const adminQuery = query(
+        collection(db, "admins"),
+        where("email", "==", userEmail)
+      );
+
+      const querySnapshot = await getDocs(adminQuery);
+
+      if (!querySnapshot.empty) {
+        // Admin user
+        router.replace("/admin/dashboard");
+      } else {
+        // Normal customer
+        router.replace("/");
+      }
     } catch (error: any) {
       alert(error.message);
     }
@@ -29,7 +63,7 @@ export default function Login() {
     <View style={styles.container}>
       {/* Logo */}
       <Image
-        source={require("../../assets/images/ChatGPT Image Jan 14, 2026, 03_40_07 PM.png")}
+        source={require("../../assets/images/logo.png")}
         style={styles.logo}
         resizeMode="contain"
       />
