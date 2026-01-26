@@ -1,4 +1,6 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { auth, db } from "../../src/services/FireBase";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 
 export interface CartItem {
   id: string;
@@ -6,9 +8,9 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
- sides?: string[];
- drinks?: { id: string; name: string; price: number }[];
- extras?: { id: string; name: string; price: number }[];
+  sides?: string[];
+  drinks?: { id: string; name: string; price: number }[];
+  extras?: { id: string; name: string; price: number }[];
 }
 
 interface CartState {
@@ -18,6 +20,20 @@ interface CartState {
 const initialState: CartState = {
   items: [],
 };
+
+// 🔥 Load cart from Firestore
+export const syncCartWithFirestore = createAsyncThunk(
+  "cart/syncCartWithFirestore",
+  async (userId: string, thunkAPI) => {
+    const cartDoc = doc(db, "carts", userId);
+    const snapshot = await getDoc(cartDoc);
+
+    if (snapshot.exists()) {
+      return snapshot.data().items as CartItem[];
+    }
+    return [];
+  }
+);
 
 const cartSlice = createSlice({
   name: "cart",
@@ -45,10 +61,27 @@ const cartSlice = createSlice({
     clearCart: (state) => {
       state.items = [];
     },
+
+    // Save cart in state
+    setCart: (state, action: PayloadAction<CartItem[]>) => {
+      state.items = action.payload;
+    },
+  },
+
+  extraReducers: (builder) => {
+    builder.addCase(syncCartWithFirestore.fulfilled, (state, action) => {
+      state.items = action.payload;
+    });
   },
 });
 
-export const { addItem, removeItem, incrementQty, decrementQty, clearCart } =
-  cartSlice.actions;
+export const {
+  addItem,
+  removeItem,
+  incrementQty,
+  decrementQty,
+  clearCart,
+  setCart,
+} = cartSlice.actions;
 
 export default cartSlice.reducer;
