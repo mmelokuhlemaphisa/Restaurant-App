@@ -1,31 +1,82 @@
-import React from "react";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
   FlatList,
-  StyleSheet,
+  Image,
   SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState, AppDispatch } from "../../src/store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../../src/store";
 import {
-  incrementQty,
-  decrementQty,
-  removeItem,
   clearCart,
+  decrementQty,
+  incrementQty,
+  removeItem,
+  setCart,
 } from "../../src/store/cartSlice";
+import { auth } from "../../src/services/FireBase";
+import {
+  saveCartToFirestore,
+  deleteCartFromFirestore,
+  getCartFromFirestore,
+} from "../../src/services/cartFirestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Cart() {
   const cart = useSelector((state: RootState) => state.cart.items);
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [firstLoad, setFirstLoad] = useState(true);
+
+  // 🔥 Get user reliably
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // 1️⃣ Load cart from Firestore
+  useEffect(() => {
+    if (!user) return;
+
+    (async () => {
+      const firestoreCart = await getCartFromFirestore(user.uid);
+      dispatch(setCart(firestoreCart));
+      setFirstLoad(false);
+    })();
+  }, [user]);
+
+  // 2️⃣ Save cart to Firestore
+  useEffect(() => {
+    if (!user) return;
+    if (firstLoad) return; // prevents overwriting during first load
+
+    saveCartToFirestore(user.uid, cart);
+  }, [cart, user, firstLoad]);
 
   const total = cart.reduce((sum, item) => {
     const drinksTotal = item.drinks?.reduce((a, d) => a + d.price, 0) || 0;
     const extrasTotal = item.extras?.reduce((a, e) => a + e.price, 0) || 0;
     return sum + item.quantity * (item.price + drinksTotal + extrasTotal);
   }, 0);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <Text style={styles.heading}>🛒 Loading Cart...</Text>
+      </SafeAreaView>
+    );
+  }
 
   if (cart.length === 0)
     return (
@@ -37,8 +88,6 @@ export default function Cart() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.heading}>🛒 My Cart</Text>
-
       <FlatList
         data={cart}
         keyExtractor={(item) => item.id}
@@ -49,19 +98,16 @@ export default function Cart() {
             <View style={styles.info}>
               <Text style={styles.name}>{item.name}</Text>
 
-              {/* Sides */}
               {item.sides && item.sides.length > 0 && (
                 <Text style={styles.extra}>Sides: {item.sides.join(", ")}</Text>
               )}
 
-              {/* Drinks */}
               {item.drinks?.map((d) => (
                 <Text key={d.id} style={styles.extra}>
                   Drink: {d.name} (+R{d.price})
                 </Text>
               ))}
 
-              {/* Extras */}
               {item.extras?.map((e) => (
                 <Text key={e.id} style={styles.extra}>
                   Extra: {e.name} (+R{e.price})
@@ -96,9 +142,22 @@ export default function Cart() {
 
       <View style={styles.totalRow}>
         <Text style={styles.totalText}>Total: R {total.toFixed(2)}</Text>
+
+        <TouchableOpacity
+          style={styles.checkoutBtn}
+          onPress={() => router.push("/checkout")}
+        >
+          <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.clearBtn}
-          onPress={() => dispatch(clearCart())}
+          onPress={async () => {
+            dispatch(clearCart());
+            if (user) {
+              await deleteCartFromFirestore(user.uid);
+            }
+          }}
         >
           <Text style={styles.clearText}>Clear Cart</Text>
         </TouchableOpacity>
@@ -135,6 +194,20 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     elevation: 2,
   },
+  checkoutBtn: {
+    marginTop: 10,
+    backgroundColor: "#000",
+    padding: 14,
+    borderRadius: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+  checkoutText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
   image: { width: 100, height: 100, borderRadius: 12 },
   info: { flex: 1, padding: 12 },
   name: { fontSize: 18, fontWeight: "bold", marginBottom: 4 },
