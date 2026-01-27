@@ -1,5 +1,12 @@
 import { useRouter } from "expo-router";
-import { addDoc, collection, doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  updateDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -13,10 +20,10 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { auth, db } from "../../src/services/FireBase";
 import { RootState } from "../../src/store";
-import { serverTimestamp } from "firebase/firestore";
 
 import { clearCart } from "../../src/store/cartSlice";
 import { deleteCartFromFirestore } from "../../src/services/cartFirestore";
+import { buildPayfastUrl } from "../../src/services/payfast";
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -27,97 +34,121 @@ export default function CheckoutScreen() {
 
   const [address, setAddress] = useState("");
   const [editingAddress, setEditingAddress] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("Visa **** 4242");
 
-  // 🔥 FIXED: Auth redirect
+  const [paymentMethod, setPaymentMethod] = useState<any>(null);
+  const [editingPayment, setEditingPayment] = useState(false);
+
+  // card fields
+  const [cardName, setCardName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
+
+  // user profile snapshot
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  /* ---------------- AUTH CHECK ---------------- */
   useEffect(() => {
-    if (!user) {
-      router.replace("/auth/login");
-    }
+    if (!user) router.replace("/auth/login");
   }, [user]);
 
-  // 🔥 FIXED: Fetch address correctly
+  /* ---------------- FETCH USER DATA ---------------- */
   useEffect(() => {
-    const fetchAddress = async () => {
+    const fetchUserData = async () => {
       if (!user) return;
 
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (userSnap.exists()) {
-        setAddress(userSnap.data().address || "");
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (snap.exists()) {
+        const data = snap.data();
+        setUserProfile(data);
+        setAddress(data.address || "");
+        setPaymentMethod(data.paymentMethod || null);
       }
     };
 
-    fetchAddress();
+    fetchUserData();
   }, [user]);
 
+  /* ---------------- TOTAL ---------------- */
   const total = cartItems.reduce((sum, item) => {
-    const extrasTotal = item.extras?.reduce((a, e) => a + e.price, 0) || 0;
-    const drinksTotal = item.drinks?.reduce((a, d) => a + d.price, 0) || 0;
-
-    return sum + item.quantity * (item.price + extrasTotal + drinksTotal);
+    const extras = item.extras?.reduce((a, e) => a + e.price, 0) || 0;
+    const drinks = item.drinks?.reduce((a, d) => a + d.price, 0) || 0;
+    return sum + item.quantity * (item.price + extras + drinks);
   }, 0);
 
+  /* ---------------- SAVE ADDRESS ---------------- */
   const saveAddress = async () => {
-    if (!user || !address.trim()) {
-      Alert.alert("Error", "Please enter a valid address");
+    if (!address.trim() || !user) {
+      Alert.alert("Error", "Invalid address");
       return;
     }
 
-    await updateDoc(doc(db, "users", user.uid), {
-      address,
-    });
-
+    await updateDoc(doc(db, "users", user.uid), { address });
     setEditingAddress(false);
   };
 
-  const placeOrder = async () => {
-    if (!address) {
-      Alert.alert("Missing Address", "Please add a delivery address");
+  /* ---------------- SAVE PAYMENT ---------------- */
+  const savePayment = async () => {
+    if (!cardName || !cardNumber || !expiry || !cvv) {
+      Alert.alert("Error", "All card fields are required");
       return;
     }
 
-    if (!user) {
-      router.replace("/auth/login");
+    if (cardNumber.length !== 16 || cvv.length !== 3) {
+      Alert.alert("Error", "Invalid card details");
+      return;
+    }
+
+    const payment = { cardName, cardNumber, expiry, cvv };
+
+    await updateDoc(doc(db, "users", user!.uid), {
+      paymentMethod: payment,
+    });
+
+    setPaymentMethod(payment);
+    setEditingPayment(false);
+  };
+
+  /* ---------------- PLACE ORDER ---------------- */
+  const placeOrder = async () => {
+    if (!user || !address || !paymentMethod) {
+      Alert.alert("Error", "Missing checkout information");
       return;
     }
 
     try {
-      const orderItems = cartItems.map((item) => {
-        const extrasTotal =
-          item.extras?.reduce((sum, e) => sum + e.price, 0) || 0;
-
-        const drinksTotal =
-          item.drinks?.reduce((sum, d) => sum + d.price, 0) || 0;
+      const items = cartItems.map((item) => {
+        const extras = item.extras?.reduce((a, e) => a + e.price, 0) || 0;
+        const drinks = item.drinks?.reduce((a, d) => a + d.price, 0) || 0;
 
         return {
           itemId: item.id,
           name: item.name,
-          image: item.image,
-          basePrice: item.price,
           quantity: item.quantity,
-
           extras: item.extras || [],
           drinks: item.drinks || [],
-
-          itemTotal: item.quantity * (item.price + extrasTotal + drinksTotal),
+          itemTotal: item.quantity * (item.price + extras + drinks),
         };
       });
 
-      const subtotal = orderItems.reduce(
-        (sum, item) => sum + item.itemTotal,
-        0
-      );
+      const subtotal = items.reduce((s, i) => s + i.itemTotal, 0);
 
-      await addDoc(collection(db, "orders"), {
+      const orderRef = await addDoc(collection(db, "orders"), {
         orderNumber: `ORD-${Date.now()}`,
 
+        // 🔗 USER LINK
         userId: user.uid,
-        userEmail: user.email || "",
+        userEmail: user.email,
 
-        items: orderItems,
+        // 👤 USER SNAPSHOT (REQUIRED BY TASK)
+        customer: {
+          name: userProfile?.name || "",
+          surname: userProfile?.surname || "",
+          phone: userProfile?.phone || "",
+          email: user.email,
+        },
 
+        items,
         subtotal,
         deliveryFee: 0,
         total: subtotal,
@@ -132,72 +163,113 @@ export default function CheckoutScreen() {
         updatedAt: serverTimestamp(),
       });
 
-      // ✅ CLEAR CART HERE
+      const payfastUrl = buildPayfastUrl({
+        amount: subtotal,
+        itemName: "Food Order",
+        email: user.email!,
+        orderId: orderRef.id,
+      });
+
+      await updateDoc(doc(db, "orders", orderRef.id), { payfastUrl });
+
       dispatch(clearCart());
       await deleteCartFromFirestore(user.uid);
 
-      Alert.alert("Order Placed 🎉", "Your order is being processed");
-      router.replace("/(tabs)");
-    } catch (error) {
-      console.error(error);
-      Alert.alert("Error", "Failed to place order");
+      router.push(`/payfast/${orderRef.id}`);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Order failed");
     }
   };
 
+  const maskCard = (num: string) => `**** **** **** ${num.slice(-4)}`;
+
+  /* ---------------- UI ---------------- */
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>🧾 Checkout</Text>
 
-      {/* ORDER SUMMARY */}
+      {/* SUMMARY */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Order Summary</Text>
-
-        {cartItems.map((item) => (
-          <View key={item.id} style={styles.row}>
+        {cartItems.map((i) => (
+          <View key={i.id} style={styles.row}>
             <Text>
-              {item.name} x{item.quantity}
+              {i.name} x{i.quantity}
             </Text>
-            <Text>R {(item.price * item.quantity).toFixed(2)}</Text>
+            <Text>R {(i.price * i.quantity).toFixed(2)}</Text>
           </View>
         ))}
       </View>
 
-      {/* DELIVERY ADDRESS */}
+      {/* ADDRESS */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Delivery Address</Text>
-
         {editingAddress ? (
           <>
             <TextInput
               style={styles.input}
               value={address}
               onChangeText={setAddress}
-              placeholder="Enter delivery address"
-              multiline
             />
             <TouchableOpacity onPress={saveAddress}>
-              <Text style={styles.link}>Save Address</Text>
+              <Text style={styles.link}>Save</Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
-            <Text style={styles.text}>{address || "No address saved"}</Text>
+            <Text>{address || "No address saved"}</Text>
             <TouchableOpacity onPress={() => setEditingAddress(true)}>
-              <Text style={styles.link}>Change Address</Text>
+              <Text style={styles.link}>Change</Text>
             </TouchableOpacity>
           </>
         )}
       </View>
 
-      {/* PAYMENT METHOD */}
+      {/* PAYMENT */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Payment Method</Text>
-        <Text>{paymentMethod}</Text>
-        <TouchableOpacity
-          onPress={() => setPaymentMethod("Mastercard **** 1189")}
-        >
-          <Text style={styles.link}>Change Card</Text>
-        </TouchableOpacity>
+        {editingPayment ? (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Name"
+              onChangeText={setCardName}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Card Number"
+              keyboardType="number-pad"
+              onChangeText={setCardNumber}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Expiry MM/YY"
+              onChangeText={setExpiry}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="CVV"
+              secureTextEntry
+              keyboardType="number-pad"
+              onChangeText={setCvv}
+            />
+            <TouchableOpacity onPress={savePayment}>
+              <Text style={styles.link}>Save Card</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text>
+              {paymentMethod
+                ? `${paymentMethod.cardName} • ${maskCard(paymentMethod.cardNumber)}`
+                : "No card saved"}
+            </Text>
+            <TouchableOpacity onPress={() => setEditingPayment(true)}>
+              <Text style={styles.link}>Change</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       {/* TOTAL */}
@@ -206,7 +278,6 @@ export default function CheckoutScreen() {
         <Text style={styles.totalAmount}>R {total.toFixed(2)}</Text>
       </View>
 
-      {/* PLACE ORDER */}
       <TouchableOpacity style={styles.button} onPress={placeOrder}>
         <Text style={styles.buttonText}>Place Order</Text>
       </TouchableOpacity>
@@ -214,72 +285,38 @@ export default function CheckoutScreen() {
   );
 }
 
+/* ---------------- STYLES ---------------- */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#f9f9f9",
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 16,
-  },
+  container: { flex: 1, padding: 16, backgroundColor: "#f9f9f9" },
+  title: { fontSize: 26, fontWeight: "bold", marginBottom: 16 },
   section: {
     backgroundColor: "#fff",
     padding: 14,
     borderRadius: 10,
     marginBottom: 14,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  text: {
-    color: "#555",
-  },
+  sectionTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  row: { flexDirection: "row", justifyContent: "space-between" },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 8,
     padding: 10,
-    minHeight: 60,
+    borderRadius: 8,
+    marginBottom: 10,
   },
-  link: {
-    color: "#ff6b00",
-    marginTop: 8,
-    fontWeight: "600",
-  },
+  link: { color: "#ff6b00", marginTop: 6, fontWeight: "600" },
   totalBox: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginVertical: 20,
   },
-  totalText: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  totalAmount: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#ff6b00",
-  },
+  totalText: { fontSize: 20, fontWeight: "bold" },
+  totalAmount: { fontSize: 20, fontWeight: "bold", color: "#ff6b00" },
   button: {
     backgroundColor: "#ff6b00",
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
-    marginBottom: 30,
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  buttonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
 });
