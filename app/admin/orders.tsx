@@ -40,15 +40,8 @@ export default function AdminOrdersList() {
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Admin Orders</Text>
-        <Text style={styles.headerSub}>
-          View and manage all customer orders
-        </Text>
-      </View>
+      <Text style={styles.headerTitle}>Admin Orders</Text>
 
-      {/* ORDERS LIST */}
       <FlatList
         data={orders}
         keyExtractor={(item) => item.id}
@@ -58,24 +51,13 @@ export default function AdminOrdersList() {
             onPress={() =>
               router.push({
                 pathname: "/admin/AdminOrderDetails",
-                params: { orderNumber: item.id },
+                params: { orderId: item.id }, // ✅ SAME NAME
               })
             }
           >
-            <View style={styles.cardHeader}>
-              <Text style={styles.orderNumber}>Order #{item.orderNumber}</Text>
-              <View
-                style={[
-                  styles.statusDot,
-                  item.status === "completed" && { backgroundColor: "#28a745" },
-                  item.status === "preparing" && { backgroundColor: "#ff6b00" },
-                  item.status === "rejected" && { backgroundColor: "#d11a2a" },
-                ]}
-              />
-            </View>
-
-            <Text style={styles.statusText}>Status: {item.status}</Text>
-            <Text style={styles.totalText}>Total: R {item.total}</Text>
+            <Text style={styles.orderNumber}>Order #{item.orderNumber}</Text>
+            <Text>Status: {item.status}</Text>
+            <Text>Total: R {item.total}</Text>
           </TouchableOpacity>
         )}
       />
@@ -86,41 +68,7 @@ export default function AdminOrdersList() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#fff" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-
-  // HEADER
-  header: {
-    marginBottom: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
   headerTitle: { fontSize: 26, fontWeight: "bold", color: "#ff6b00" },
-  headerSub: { fontSize: 14, color: "#666", marginTop: 4 },
-
-  // CARD
-  card: {
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#eee",
-    borderRadius: 12,
-    marginBottom: 12,
-    backgroundColor: "#fafafa",
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+  card: { padding: 16, borderWidth: 1, marginBottom: 12, borderRadius: 10 },
   orderNumber: { fontWeight: "bold", fontSize: 18 },
-
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#ff6b00",
-  },
-
-  statusText: { marginTop: 6, color: "#444" },
-  totalText: { marginTop: 6, fontWeight: "bold" },
 });
