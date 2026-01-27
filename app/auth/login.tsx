@@ -52,7 +52,7 @@ export default function Login() {
         router.replace("/admin/dashboard");
       } else {
         // Normal customer
-        router.replace("/");
+        router.replace("/home");
       }
     } catch (error: any) {
       alert(error.message);

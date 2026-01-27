@@ -19,7 +19,13 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [card, setCard] = useState("");
+
+  // ✅ CARD FIELDS
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [cardName, setCardName] = useState("");
+
   const [password, setPassword] = useState("");
 
   const handleRegister = async () => {
@@ -37,7 +43,15 @@ export default function Register() {
         email,
         phone,
         address,
-        card,
+
+        // 💳 Save card as payment method
+        paymentMethod: {
+          cardName,
+          cardNumber,
+          expiry,
+          cvv,
+        },
+
         createdAt: new Date(),
       });
 
@@ -76,11 +90,34 @@ export default function Register() {
         style={styles.input}
         onChangeText={setAddress}
       />
+
+      {/* ================= CARD DETAILS ================= */}
+      <Text style={styles.subTitle}>Card Details</Text>
+
       <TextInput
-        placeholder="Card Details (Fake)"
+        placeholder="Cardholder Name"
         style={styles.input}
-        onChangeText={setCard}
+        onChangeText={setCardName}
       />
+      <TextInput
+        placeholder="Card Number (16 digits)"
+        style={styles.input}
+        keyboardType="number-pad"
+        onChangeText={setCardNumber}
+      />
+      <TextInput
+        placeholder="Expiry Date (MM/YY)"
+        style={styles.input}
+        onChangeText={setExpiry}
+      />
+      <TextInput
+        placeholder="CVV"
+        style={styles.input}
+        keyboardType="number-pad"
+        secureTextEntry
+        onChangeText={setCvv}
+      />
+
       <TextInput
         placeholder="Password"
         style={styles.input}
@@ -102,6 +139,8 @@ export default function Register() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, justifyContent: "center" },
   title: { fontSize: 28, fontWeight: "bold", marginBottom: 20 },
+  subTitle: { fontSize: 18, fontWeight: "bold", marginTop: 15 },
+
   input: {
     borderWidth: 1,
     borderColor: "#ccc",

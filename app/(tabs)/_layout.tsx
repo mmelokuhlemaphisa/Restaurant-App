@@ -5,6 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../src/services/FireBase";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
 
 export default function TabsLayout() {
   const router = useRouter();
@@ -19,6 +20,13 @@ export default function TabsLayout() {
     return unsub;
   }, []);
 
+  // ✅ CART BADGE
+  const cartItems = useSelector((state: any) => state.cart.items);
+  const cartCount = cartItems.reduce(
+    (total: number, item: any) => total + item.quantity,
+    0,
+  );
+
   return (
     <Tabs
       screenOptions={{
@@ -29,7 +37,7 @@ export default function TabsLayout() {
     >
       {/* 🏠 MENU — PUBLIC */}
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           headerTitle: () => (
             <View style={styles.headerContainer}>
@@ -64,6 +72,9 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cart" size={size} color={color} />
           ),
+
+          // ✅ Cart Badge
+          tabBarBadge: cartCount > 0 ? cartCount : undefined,
         }}
       />
 
