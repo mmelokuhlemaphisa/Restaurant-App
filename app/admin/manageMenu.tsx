@@ -20,6 +20,7 @@ import {
   MenuItem,
 } from "../../src/store/adminMenuSlice";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 import * as ImagePicker from "expo-image-picker";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -27,7 +28,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 export default function ManageMenu() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { menu, loading } = useSelector((state: RootState) => state.adminMenu);
+  const { menu } = useSelector((state: RootState) => state.adminMenu);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -66,7 +67,7 @@ export default function ManageMenu() {
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
-      setImageUrl(""); // clear url if image picked
+      setImageUrl("");
     }
   };
 
@@ -111,9 +112,8 @@ export default function ManageMenu() {
   };
 
   const saveItem = async () => {
-    let finalImage = imageUrl || imageUrl; // use url if exists
+    let finalImage = imageUrl;
 
-    // If image is picked, upload to firebase
     if (image.startsWith("file://")) {
       finalImage = await uploadImage(image);
     }
@@ -149,8 +149,8 @@ export default function ManageMenu() {
         filter === "all"
           ? true
           : filter === "popular"
-          ? item.popular
-          : item.new;
+            ? item.popular
+            : item.new;
 
       return matchSearch && matchFilter;
     });
@@ -161,10 +161,12 @@ export default function ManageMenu() {
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <Text style={styles.title}>Manage Menu</Text>
-        <TouchableOpacity onPress={() => router.push("/admin/dashboard")}>
-          <Text style={styles.back}>← Dashboard</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={22} color="#000" />
+          <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
+
+        <Text style={styles.title}>Manage Menu</Text>
       </View>
 
       {/* SEARCH */}
@@ -204,6 +206,7 @@ export default function ManageMenu() {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Image source={{ uri: item.image }} style={styles.thumb} />
+
             <View style={{ flex: 1 }}>
               <Text style={styles.itemName}>{item.name}</Text>
               <Text>R {item.price}</Text>
@@ -244,14 +247,13 @@ export default function ManageMenu() {
             <Text style={styles.btnText}>Pick Image</Text>
           </TouchableOpacity>
 
-          {/* NEW: IMAGE URL INPUT */}
           <TextInput
             style={styles.input}
             placeholder="Image URL (optional)"
             value={imageUrl}
             onChangeText={(text) => {
               setImageUrl(text);
-              setImage(""); // clear picked image when url is used
+              setImage("");
             }}
           />
 
@@ -310,9 +312,23 @@ export default function ManageMenu() {
 /* ---------------- STYLES ---------------- */
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#fff" },
-  header: { flexDirection: "row", justifyContent: "space-between" },
+
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+
+  backBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  backText: { fontWeight: "bold" },
+
   title: { fontSize: 24, fontWeight: "bold", color: "#ff6b00" },
-  back: { color: "#000", fontWeight: "bold" },
 
   search: {
     borderWidth: 1,
@@ -323,6 +339,7 @@ const styles = StyleSheet.create({
   },
 
   filterRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
+
   filterBtn: {
     flex: 1,
     padding: 10,
@@ -331,7 +348,9 @@ const styles = StyleSheet.create({
     borderColor: "#ff6b00",
     alignItems: "center",
   },
+
   filterActive: { backgroundColor: "#ff6b00" },
+
   filterText: { fontWeight: "bold", color: "#ff6b00" },
 
   addBtn: {
@@ -340,6 +359,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 15,
   },
+
   addText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
 
   card: {
@@ -352,17 +372,29 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignItems: "center",
   },
+
   thumb: { width: 60, height: 60, borderRadius: 10 },
+
   itemName: { fontWeight: "bold", fontSize: 16 },
 
   actions: { gap: 6 },
+
   editBtn: { backgroundColor: "#000", padding: 8, borderRadius: 8 },
+
   deleteBtn: { backgroundColor: "#ff6b00", padding: 8, borderRadius: 8 },
+
   btnText: { color: "#fff", fontWeight: "bold", textAlign: "center" },
 
   modal: { flex: 1, padding: 20 },
+
   modalTitle: { fontSize: 22, fontWeight: "bold", color: "#ff6b00" },
-  preview: { width: "100%", height: 180, borderRadius: 12, marginVertical: 10 },
+
+  preview: {
+    width: "100%",
+    height: 180,
+    borderRadius: 12,
+    marginVertical: 10,
+  },
 
   imageBtn: {
     backgroundColor: "#000",
@@ -370,6 +402,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 10,
   },
+
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -377,6 +410,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
   },
+
   switchRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -389,5 +423,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 10,
   },
-  cancelBtn: { padding: 14, borderRadius: 12, alignItems: "center" },
+
+  cancelBtn: { padding: 14, alignItems: "center" },
 });

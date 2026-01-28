@@ -9,10 +9,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { LineChart } from "react-native-chart-kit";
 import { Ionicons } from "@expo/vector-icons";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../src/services/FireBase";
+import { PieChart, ProgressChart } from "react-native-chart-kit";
+
+
+
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -43,10 +46,43 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
-  const chartData = {
+  // Pie chart data – menu distribution
+  const pieData = [
+    {
+      name: "Regular",
+      count: menuCount - popularCount - newCount,
+      color: "#aaa",
+      legendFontColor: "#555",
+      legendFontSize: 14,
+    },
+    {
+      name: "Popular",
+      count: popularCount,
+      color: "#ff6b00",
+      legendFontColor: "#555",
+      legendFontSize: 14,
+    },
+    {
+      name: "New",
+      count: newCount,
+      color: "#00bfff",
+      legendFontColor: "#555",
+      legendFontSize: 14,
+    },
+  ];
+
+  // Bar chart placeholder data – daily activity
+  const dailyData = {
     labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    datasets: [{ data: [menuCount, popularCount, newCount, 5, 7, 10, 12] }],
+    datasets: [
+      {
+        data: [2, 3, 1, 4, 5, 0, 2], // Replace with real daily counts from Firebase if available
+      },
+    ],
   };
+
+  // Progress chart data – popular items ratio
+  const progressData = { data: [menuCount > 0 ? popularCount / menuCount : 0] };
 
   if (loading) {
     return (
@@ -91,29 +127,25 @@ export default function AdminDashboard() {
         </View>
       </View>
 
-      {/* CHART */}
+      {/* PIE CHART – MENU DISTRIBUTION */}
       <View style={styles.chartCard}>
-        <Text style={styles.sectionTitle}>Menu Activity</Text>
-        <LineChart
-          data={chartData}
+        <Text style={styles.sectionTitle}>Menu Distribution</Text>
+        <PieChart
+          data={pieData}
           width={screenWidth - 60}
           height={220}
           chartConfig={{
             backgroundGradientFrom: "#fff",
             backgroundGradientTo: "#fff",
-            decimalPlaces: 0,
-            color: () => "#ff6b00",
-            labelColor: () => "#555",
-            propsForDots: {
-              r: "5",
-              strokeWidth: "2",
-              stroke: "#ff6b00",
-            },
+            color: () => "#000",
           }}
-          bezier
-          style={{ borderRadius: 16 }}
+          accessor="count"
+          backgroundColor="transparent"
+          paddingLeft="15"
         />
       </View>
+
+
 
       {/* ACTIONS */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -140,6 +172,14 @@ export default function AdminDashboard() {
       >
         <Ionicons name="clipboard" size={22} color="#fff" />
         <Text style={styles.btnText}>Orders</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.btn}
+        onPress={() => router.push("/admin/addAdmin")}
+      >
+        <Ionicons name="person-add" size={22} color="#fff" />
+        <Text style={styles.btnText}>Add Admin</Text>
       </TouchableOpacity>
     </ScrollView>
   );
