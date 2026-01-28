@@ -20,16 +20,14 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { auth, db } from "../../src/services/FireBase";
 import { RootState } from "../../src/store";
-
 import { clearCart } from "../../src/store/cartSlice";
 import { deleteCartFromFirestore } from "../../src/services/cartFirestore";
-import { buildPayfastUrl } from "../../src/services/payfast";
+import Checkout from "../components/checkout";
 
 export default function CheckoutScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
   const cartItems = useSelector((state: RootState) => state.cart.items);
-
   const user = auth.currentUser;
 
   const [address, setAddress] = useState("");
@@ -38,25 +36,22 @@ export default function CheckoutScreen() {
   const [paymentMethod, setPaymentMethod] = useState<any>(null);
   const [editingPayment, setEditingPayment] = useState(false);
 
-  // card fields
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
 
-  // user profile snapshot
   const [userProfile, setUserProfile] = useState<any>(null);
 
-  /* ---------------- AUTH CHECK ---------------- */
+  /* ---------- AUTH ---------- */
   useEffect(() => {
     if (!user) router.replace("/auth/login");
   }, [user]);
 
-  /* ---------------- FETCH USER DATA ---------------- */
+  /* ---------- FETCH USER ---------- */
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUser = async () => {
       if (!user) return;
-
       const snap = await getDoc(doc(db, "users", user.uid));
       if (snap.exists()) {
         const data = snap.data();
@@ -65,42 +60,34 @@ export default function CheckoutScreen() {
         setPaymentMethod(data.paymentMethod || null);
       }
     };
-
-    fetchUserData();
+    fetchUser();
   }, [user]);
 
-  /* ---------------- TOTAL ---------------- */
+  /* ---------- TOTAL ---------- */
   const total = cartItems.reduce((sum, item) => {
     const extras = item.extras?.reduce((a, e) => a + e.price, 0) || 0;
     const drinks = item.drinks?.reduce((a, d) => a + d.price, 0) || 0;
     return sum + item.quantity * (item.price + extras + drinks);
   }, 0);
 
-  /* ---------------- SAVE ADDRESS ---------------- */
+  /* ---------- SAVE ADDRESS ---------- */
   const saveAddress = async () => {
     if (!address.trim() || !user) {
       Alert.alert("Error", "Invalid address");
       return;
     }
-
     await updateDoc(doc(db, "users", user.uid), { address });
     setEditingAddress(false);
   };
 
-  /* ---------------- SAVE PAYMENT ---------------- */
+  /* ---------- SAVE CARD ---------- */
   const savePayment = async () => {
     if (!cardName || !cardNumber || !expiry || !cvv) {
-      Alert.alert("Error", "All card fields are required");
-      return;
-    }
-
-    if (cardNumber.length !== 16 || cvv.length !== 3) {
-      Alert.alert("Error", "Invalid card details");
+      Alert.alert("Error", "All card fields required");
       return;
     }
 
     const payment = { cardName, cardNumber, expiry, cvv };
-
     await updateDoc(doc(db, "users", user!.uid), {
       paymentMethod: payment,
     });
@@ -109,10 +96,10 @@ export default function CheckoutScreen() {
     setEditingPayment(false);
   };
 
-  /* ---------------- PLACE ORDER ---------------- */
-  const placeOrder = async () => {
+  /* ---------- PAYSTACK SUCCESS ---------- */
+  const handleSuccessfulPayment = async () => {
     if (!user || !address || !paymentMethod) {
-      Alert.alert("Error", "Missing checkout information");
+      Alert.alert("Error", "Missing checkout info");
       return;
     }
 
@@ -133,49 +120,30 @@ export default function CheckoutScreen() {
 
       const subtotal = items.reduce((s, i) => s + i.itemTotal, 0);
 
-      const orderRef = await addDoc(collection(db, "orders"), {
+      await addDoc(collection(db, "orders"), {
         orderNumber: `ORD-${Date.now()}`,
-
-        // 🔗 USER LINK
         userId: user.uid,
         userEmail: user.email,
-
-        // 👤 USER SNAPSHOT (REQUIRED BY TASK)
         customer: {
           name: userProfile?.name || "",
           surname: userProfile?.surname || "",
           phone: userProfile?.phone || "",
           email: user.email,
         },
-
         items,
         subtotal,
-        deliveryFee: 0,
         total: subtotal,
-
         address,
         paymentMethod,
-
-        status: "pending",
-        isPaid: false,
-
+        status: "paid",
+        isPaid: true,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
       });
-
-      const payfastUrl = buildPayfastUrl({
-        amount: subtotal,
-        itemName: "Food Order",
-        email: user.email!,
-        orderId: orderRef.id,
-      });
-
-      await updateDoc(doc(db, "orders", orderRef.id), { payfastUrl });
 
       dispatch(clearCart());
       await deleteCartFromFirestore(user.uid);
 
-      router.push(`/payfast/${orderRef.id}`);
+      router.replace("/");
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Order failed");
@@ -184,7 +152,7 @@ export default function CheckoutScreen() {
 
   const maskCard = (num: string) => `**** **** **** ${num.slice(-4)}`;
 
-  /* ---------------- UI ---------------- */
+  /* ---------- UI ---------- */
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>🧾 Checkout</Text>
@@ -251,7 +219,6 @@ export default function CheckoutScreen() {
               style={styles.input}
               placeholder="CVV"
               secureTextEntry
-              keyboardType="number-pad"
               onChangeText={setCvv}
             />
             <TouchableOpacity onPress={savePayment}>
@@ -278,14 +245,16 @@ export default function CheckoutScreen() {
         <Text style={styles.totalAmount}>R {total.toFixed(2)}</Text>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={placeOrder}>
-        <Text style={styles.buttonText}>Place Order</Text>
-      </TouchableOpacity>
+      {/* PAYSTACK */}
+      <Checkout
+        email={user?.email || "customer@example.com"}
+        totalAmount={total}
+      />
     </ScrollView>
   );
 }
 
-/* ---------------- STYLES ---------------- */
+/* ---------- STYLES ---------- */
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#f9f9f9" },
   title: { fontSize: 26, fontWeight: "bold", marginBottom: 16 },
@@ -312,11 +281,4 @@ const styles = StyleSheet.create({
   },
   totalText: { fontSize: 20, fontWeight: "bold" },
   totalAmount: { fontSize: 20, fontWeight: "bold", color: "#ff6b00" },
-  button: {
-    backgroundColor: "#ff6b00",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  buttonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
 });
