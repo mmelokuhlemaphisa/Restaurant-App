@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   FlatList,
@@ -9,12 +9,15 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Dimensions,
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { getMenuItems, MenuItem } from "../../src/services/menuServices";
 import { addItem } from "../../src/store/cartSlice";
 import CategoryFilter from "../components/CategoryFilter";
 import HomeHeader from "../components/HomeHeader";
+
+const { width: screenWidth } = Dimensions.get("window");
 
 export default function Home() {
   const router = useRouter();
@@ -26,30 +29,24 @@ export default function Home() {
 
   /* FETCH MENU (PUBLIC) */
   useEffect(() => {
-    getMenuItems().then((data) => {
-      setMenu(data);
-    });
+    getMenuItems().then((data) => setMenu(data));
   }, []);
 
-  /* FILTER + SEARCH (fixed) */
+  /* FILTER + SEARCH */
   const finalMenu = useMemo(() => {
     let filtered = menu;
 
     if (selectedCategory !== "All") {
-      if (selectedCategory === "Popular") {
-        filtered = filtered.filter((item) => item.popular);
-      } else if (selectedCategory === "New") {
-        filtered = filtered.filter((item) => item.new);
-      } else {
-        filtered = filtered.filter(
-          (item) => item.category === selectedCategory,
-        );
-      }
+      if (selectedCategory === "Popular")
+        filtered = filtered.filter((i) => i.popular);
+      else if (selectedCategory === "New")
+        filtered = filtered.filter((i) => i.new);
+      else filtered = filtered.filter((i) => i.category === selectedCategory);
     }
 
     if (searchQuery.trim().length > 0) {
-      filtered = filtered.filter((item) =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      filtered = filtered.filter((i) =>
+        i.name.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
 
@@ -72,11 +69,38 @@ export default function Home() {
     "All",
     "Popular",
     "New",
-    ...Array.from(new Set(menu.map((item) => item.category))),
+    ...Array.from(new Set(menu.map((i) => i.category))),
+  ];
+  const popularItems = menu.filter((i) => i.popular);
+  const newItems = menu.filter((i) => i.new);
+
+  /*** HERO CAROUSEL ***/
+  const heroData = [
+    {
+      image: "https://images.unsplash.com/photo-1600891964599-f61ba0e24092",
+      text: "Delicious Food",
+    },
+    {
+      image: "https://images.unsplash.com/photo-1550547660-d9450f859349",
+      text: "Hot & Fresh",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1705537748124-926009973f94?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTZ8fHBpenphJTIwc3BlY2lhbHxlbnwwfHwwfHx8MA%3D%3D",
+      text: "Try Our Specials",
+    },
   ];
 
-  const popularItems = menu.filter((item) => item.popular);
-  const newItems = menu.filter((item) => item.new);
+  const heroRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    let index = 0;
+    const interval = setInterval(() => {
+      index = (index + 1) % heroData.length;
+      heroRef.current?.scrollToIndex({ index, animated: true });
+    }, 3000); // auto scroll every 3 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -87,6 +111,29 @@ export default function Home() {
         ListHeaderComponent={
           <>
             <HomeHeader onSearch={setSearchQuery} />
+
+            {/* HERO CAROUSEL */}
+            <View style={{ marginVertical: 16 }}>
+              <FlatList
+                ref={heroRef}
+                data={heroData}
+                keyExtractor={(_, i) => i.toString()}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                renderItem={({ item }) => (
+                  <View style={styles.heroCard}>
+                    <Image
+                      source={{ uri: item.image }}
+                      style={styles.heroImage}
+                    />
+                    <View style={styles.heroOverlay}>
+                      <Text style={styles.heroText}>{item.text}</Text>
+                    </View>
+                  </View>
+                )}
+              />
+            </View>
 
             <CategoryFilter
               categories={categories}
@@ -100,7 +147,7 @@ export default function Home() {
                 <Text style={styles.heading}>Popular Now</Text>
                 <FlatList
                   data={popularItems}
-                  keyExtractor={(item) => item.id}
+                  keyExtractor={(i) => i.id}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   renderItem={({ item }) => (
@@ -122,7 +169,6 @@ export default function Home() {
                         <Text style={styles.price}>
                           R {item.price.toFixed(2)}
                         </Text>
-
                         <TouchableOpacity
                           style={styles.addCartBtn}
                           onPress={() => handleAddToCart(item)}
@@ -143,7 +189,7 @@ export default function Home() {
                 <Text style={styles.heading}>New Items</Text>
                 <FlatList
                   data={newItems}
-                  keyExtractor={(item) => item.id}
+                  keyExtractor={(i) => i.id}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   renderItem={({ item }) => (
@@ -204,9 +250,25 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fefefe", paddingHorizontal: 16 },
+  container: { flex: 1, paddingHorizontal: 16, marginTop: 15 },
   listContent: { paddingBottom: 20 },
   heading: { fontSize: 24, fontWeight: "bold", marginVertical: 12 },
+  heroCard: {
+    width: screenWidth - 32,
+    height: 180,
+    borderRadius: 16,
+    marginRight: 16,
+    overflow: "hidden",
+  },
+  heroImage: { width: "100%", height: "100%" },
+  heroOverlay: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    padding: 12,
+  },
+  heroText: { color: "#fff", fontSize: 22, fontWeight: "bold" },
   popularCard: {
     width: 240,
     backgroundColor: "#fff",
@@ -214,11 +276,7 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   popularImage: { width: "100%", height: 140 },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    marginBottom: 16,
-  },
+  card: { backgroundColor: "#fff", borderRadius: 16, marginBottom: 16 },
   image: { width: "100%", height: 180 },
   info: { padding: 14 },
   name: { fontSize: 18, fontWeight: "bold" },
@@ -227,10 +285,10 @@ const styles = StyleSheet.create({
   addCartBtn: {
     position: "absolute",
     right: 14,
-    bottom: 14,
+    bottom: 2,
     backgroundColor: "#ff6b00",
     flexDirection: "row",
-    padding: 8,
+    padding: 6,
     borderRadius: 20,
   },
   addCartText: { color: "#fff", marginLeft: 6 },

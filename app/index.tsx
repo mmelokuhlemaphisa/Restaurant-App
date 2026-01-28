@@ -108,23 +108,6 @@ export default function Index() {
         </View>
       </View>
 
-      {/* 👇 Bottom Buttons */}
-      <View style={styles.row}>
-        <TouchableOpacity
-          style={styles.authBtn}
-          onPress={() => router.push("/auth/login")}
-        >
-          <Text style={styles.authText}>Sign In</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.authBtn, styles.authBtnBlack]}
-          onPress={() => router.push("/auth/register")}
-        >
-          <Text style={[styles.authText, styles.authTextWhite]}>Register</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* 📌 Footer */}
       <Text style={styles.footer}>
         By using CraveCart, you agree to our terms & privacy policy.
