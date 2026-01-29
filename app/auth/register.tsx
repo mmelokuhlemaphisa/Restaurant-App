@@ -67,26 +67,31 @@ export default function Register() {
 
       <TextInput
         placeholder="Name"
+        placeholderTextColor="#999"
         style={styles.input}
         onChangeText={setName}
       />
       <TextInput
         placeholder="Surname"
+        placeholderTextColor="#999"
         style={styles.input}
         onChangeText={setSurname}
       />
       <TextInput
         placeholder="Email"
+        placeholderTextColor="#999"
         style={styles.input}
         onChangeText={setEmail}
       />
       <TextInput
         placeholder="Contact Number"
+        placeholderTextColor="#999"
         style={styles.input}
         onChangeText={setPhone}
       />
       <TextInput
         placeholder="Address"
+        placeholderTextColor="#999"
         style={styles.input}
         onChangeText={setAddress}
       />
@@ -96,22 +101,26 @@ export default function Register() {
 
       <TextInput
         placeholder="Cardholder Name"
+        placeholderTextColor="#999"
         style={styles.input}
         onChangeText={setCardName}
       />
       <TextInput
         placeholder="Card Number (16 digits)"
+        placeholderTextColor="#999"
         style={styles.input}
         keyboardType="number-pad"
         onChangeText={setCardNumber}
       />
       <TextInput
         placeholder="Expiry Date (MM/YY)"
+        placeholderTextColor="#999"
         style={styles.input}
         onChangeText={setExpiry}
       />
       <TextInput
         placeholder="CVV"
+        placeholderTextColor="#999"
         style={styles.input}
         keyboardType="number-pad"
         secureTextEntry
@@ -120,6 +129,7 @@ export default function Register() {
 
       <TextInput
         placeholder="Password"
+        placeholderTextColor="#999"
         style={styles.input}
         secureTextEntry
         onChangeText={setPassword}
