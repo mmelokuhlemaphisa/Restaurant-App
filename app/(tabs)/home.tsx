@@ -250,7 +250,7 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 16, marginTop: 15 },
+  container: { flex: 1, backgroundColor: "#fefefe", paddingHorizontal: 16, marginTop: 15 },
   listContent: { paddingBottom: 20 },
   heading: { fontSize: 24, fontWeight: "bold", marginVertical: 12 },
   heroCard: {
