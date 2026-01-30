@@ -249,6 +249,7 @@ export default function CheckoutScreen() {
       <Checkout
         email={user?.email || "customer@example.com"}
         totalAmount={total}
+        onSuccess={handleSuccessfulPayment}
       />
     </ScrollView>
   );

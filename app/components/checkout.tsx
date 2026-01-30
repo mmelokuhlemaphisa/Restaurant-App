@@ -1,39 +1,38 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { usePaystack } from "react-native-paystack-webview";
-import { useRouter } from "expo-router";
 
 interface CheckoutProps {
   email: string;
   totalAmount: number; // in Rand
+  onSuccess: () => Promise<void>; // 🔥 ADD THIS
 }
 
-const Checkout: React.FC<CheckoutProps> = ({ email, totalAmount }) => {
+const Checkout: React.FC<CheckoutProps> = ({
+  email,
+  totalAmount,
+  onSuccess,
+}) => {
   const { popup } = usePaystack();
-  const router = useRouter();
 
   const handlePay = () => {
     popup.checkout({
       email,
-      amount: totalAmount ,
-      onSuccess: (res) => {
-        console.log("Success:", res);
-        Alert.alert("Payment Successful", "Thank you for your order!", [
-          {
-            text: "OK",
-            onPress: () => router.replace("/home"), // redirect to Home
-          },
-        ]);
-        // Optional: Dispatch Redux action to clear cart here
+      amount: Math.round(totalAmount * 100), // 🔥 Paystack needs cents
+      onSuccess: async (res) => {
+        console.log("✅ Payment Success:", res);
+
+        try {
+          await onSuccess(); // 🔥 SAVE ORDER HERE
+          Alert.alert("Payment Successful", "Your order has been placed!");
+        } catch (err) {
+          console.error("Order save failed:", err);
+          Alert.alert("Error", "Payment succeeded but order save failed.");
+        }
       },
       onCancel: () => {
-        console.log("User cancelled");
-        Alert.alert("Payment Cancelled", "Your payment was cancelled.", [
-          {
-            text: "OK",
-            onPress: () => router.replace("/checkout"), // stay on checkout
-          },
-        ]);
+        console.log("❌ Payment Cancelled");
+        Alert.alert("Payment Cancelled", "Your payment was cancelled.");
       },
     });
   };
