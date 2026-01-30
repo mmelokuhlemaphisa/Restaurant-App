@@ -1,50 +1,191 @@
-# Welcome to your Expo app 👋
+<img src="https://socialify.git.ci/mmelokuhlemaphisa/Restaurant-App/image?language=1&owner=1&name=1&stargazers=1&theme=Light" alt="Restaurant-App" width="640" height="320" />
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+---
 
-## Get started
+# 📱 CraveCart Restaurant App
 
-1. Install dependencies
+**Built with React Native, Expo, Firebase & Paystack**
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## 📌 Project Overview
 
-   ```bash
-   npx expo start
-   ```
+This project is a **full-stack mobile food ordering application** developed using **React Native (Expo)** and **Firebase**. The app allows users to browse a restaurant menu, customize their orders, manage their cart, securely make payments using **Paystack**, and track their orders in real time.
 
-In the output, you'll find options to open the app in a
+The system also includes an **Admin Dashboard** for restaurant management, allowing administrators to manage food items, track customer orders, update restaurant information, and monitor sales.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+This project demonstrates modern **mobile application development**, **cloud database integration**, **authentication**, **payment gateway integration**, and **real-time data handling**.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## 🎯 Key Features
 
-When you're ready, run:
+### 👤 User Features
 
-```bash
-npm run reset-project
+* User authentication (Login & Registration)
+* Browse food menu by categories
+* Add items to cart
+* Customize meals with extras and drinks
+* View and manage shopping cart
+* Secure online payments using Paystack
+* Automatic order generation and saving
+* Order history tracking
+* Address and payment method management
+
+### 🧑‍💼 Admin Features
+
+* Admin authentication
+* Add, update, and delete food items
+* Manage categories
+* View all customer orders
+* Track payment status
+* Update restaurant information
+* Monitor sales and activity
+
+---
+
+## 🛠️ Technologies Used
+
+| Technology              | Purpose                   |
+| ----------------------- | ------------------------- |
+| React Native (Expo)     | Mobile app development    |
+| TypeScript              | Type-safe coding          |
+| Firebase Authentication | User login & registration |
+| Firestore Database      | Cloud data storage        |
+| Redux Toolkit           | State management          |
+| Expo Router             | App navigation            |
+| Paystack                | Secure payment processing |
+| Tailwind / StyleSheet   | UI styling                |
+
+---
+
+## 🗂️ Project Structure
+
+```
+app/
+ ├── (tabs)/
+ ├── admin/
+ ├── auth/
+ ├── checkout/
+ ├── components/
+ ├── index.tsx
+src/
+ ├── services/
+ ├── store/
+ ├── models/
+ └── utils/
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## 🔐 Authentication System
 
-To learn more about developing your project with Expo, look at the following resources:
+* Firebase Authentication is used.
+* Users register and login securely.
+* Admin and customer roles are supported.
+* Protected routes prevent unauthorized access.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## 🛒 Ordering System Workflow
 
-Join our community of developers creating universal apps.
+1. User browses menu
+2. Adds items to cart
+3. Customizes meals
+4. Proceeds to checkout
+5. Enters address & payment details
+6. Pays securely via Paystack
+7. Order is saved automatically to Firebase
+8. Admin receives the order instantly
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 💳 Payment Integration
+
+Payments are securely processed using **Paystack Payment Gateway**.
+
+### Payment Flow:
+
+```
+User → Checkout → Paystack → Payment Confirmation → Save Order → Clear Cart → Success Page
+```
+
+* Payments are verified before saving the order.
+* Only successful payments generate orders.
+
+---
+
+## 🔥 Firestore Database Structure
+
+```
+users/
+admins/
+orders/
+menu/
+restaurant/
+carts/
+```
+
+### Orders Collection Example:
+
+```
+orders {
+  orderNumber
+  userId
+  items[]
+  subtotal
+  total
+  paymentMethod
+  address
+  status
+  createdAt
+}
+```
+
+---
+
+## 🚀 Installation & Setup
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/your-username/your-repo-name.git
+```
+
+### 2️⃣ Install Dependencies
+
+```bash
+npm install
+```
+
+### 3️⃣ Start Development Server
+
+```bash
+npx expo start
+```
+
+---
+
+## 🔑 Environment Setup
+
+Create Firebase project and add credentials inside:
+
+```
+src/services/FireBase.ts
+```
+
+---
+
+## 📊 Admin Dashboard Features
+
+* View real-time customer orders
+* Track payment confirmations
+* Manage restaurant profile
+* Update menu & pricing
+* Monitor sales
+
+---
+
+
+
+
