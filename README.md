@@ -43,6 +43,9 @@ This project demonstrates modern **mobile application development**, **cloud dat
 * Monitor sales and activity
 
 ---
+### Admin login Details
+* email: admin1@gmail.com
+* Password: 12345@qwert
 
 ## 🛠️ Technologies Used
 
