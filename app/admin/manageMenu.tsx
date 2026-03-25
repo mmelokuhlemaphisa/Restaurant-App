@@ -21,7 +21,7 @@ import {
 } from "../../src/store/adminMenuSlice";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-
+import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -223,7 +223,23 @@ export default function ManageMenu() {
 
               <TouchableOpacity
                 style={styles.deleteBtn}
-                onPress={() => dispatch(deleteMenuItem(item.id))}
+                onPress={() => {
+                  Alert.alert(
+                    "Delete Item",
+                    `Are you sure you want to delete ${item.name}?`,
+                    [
+                      {
+                        text: "Cancel",
+                        style: "cancel",
+                      },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: () => dispatch(deleteMenuItem(item.id)),
+                      },
+                    ],
+                  );
+                }}
               >
                 <Text style={styles.btnText}>Delete</Text>
               </TouchableOpacity>
