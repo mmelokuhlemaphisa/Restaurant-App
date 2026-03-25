@@ -120,9 +120,6 @@ export default function Profile() {
         <Text style={styles.label}>Address</Text>
         <Text style={styles.value}>{profile.address}</Text>
 
-        <Text style={styles.label}>Card Details</Text>
-        <Text style={styles.value}>{profile.card}</Text>
-
         <Text style={styles.label}>Member Since</Text>
         <Text style={styles.value}>
           {profile.createdAt?.toDate

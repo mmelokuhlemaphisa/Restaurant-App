@@ -30,4 +30,4 @@ export const getMenuItems = async (): Promise<MenuItem[]> => {
       new: data.new || false, // default false if not set
     };
   });
-};
+};    
